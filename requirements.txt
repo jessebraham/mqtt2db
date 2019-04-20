@@ -1,0 +1,7 @@
+appdirs==1.4.3
+attrs==19.1.0
+black==19.3b0
+Click==7.0
+paho-mqtt==1.4.0
+psycopg2-binary==2.8.2
+toml==0.10.0
