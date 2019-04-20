@@ -30,3 +30,6 @@ class DefaultMessageHandler(BaseMessageHandler):
 
         cls.insert(cursor, message.topic, data)
         conn.commit()
+
+
+BaseMessageHandler.register(DefaultMessageHandler)
