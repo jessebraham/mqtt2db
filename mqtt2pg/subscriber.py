@@ -9,44 +9,60 @@ import psycopg2
 logger = logging.getLogger(__name__)
 
 
-class MQTTSubscriber(mqtt.Client):
+class Subscriber(mqtt.Client):
     """
-    This subscriber assumes that ingress data is in JSON format. This may
-    change or become configurable in the future.
+    Connects to an MQTT Broker and subscribes to all configured topics,
+    registering the appropriate `on_message` handlers for each topic in the
+    process.
     """
 
-    def __init__(self, mqtt_config, pg_config, topics_and_handlers, qos=0):
+    def __init__(self, config, topics_and_handlers, qos=0):
+        """
+        The `config` dict MUST have "mqtt" and "pg" keys in order for this
+        class to operate properly. In turn, those keys respective dicts must
+        contain all required configuration for our MQTT Broker and PostgreSQL.
+        Refer to `template.config.toml` for all required fields.
+
+        `topics_and_handlers` should be a dict of string-class key-value pairs.
+        All handler classes should inherit from `handlers.BaseMessageHandler`,.
+        and in turn MUST implement the `process` function.
+        """
         super().__init__()
-        self.conn = psycopg2.connect(**pg_config)
-        self.mqtt_config = mqtt_config
-        self.topics_and_handlers = topics_and_handlers
+        self.enable_logger(logger)
+        self.mqtt_config = config.get("mqtt", {})
+        self.pg_config = config.get("pg", {})
         self.qos = qos
+        self.topics_and_handlers = topics_and_handlers
 
-    def on_log(self, mqttc, obj, level, message):
+    def run(self):
         """
-        TODO: try to map `level` to an actual string, log at proper level (if
-              that's even how this works...)
+        Establish connections with both our MQTT Broker and PostgreSQL, and
+        start the MQTT client's event loop.
         """
-        logger.info(message)
+        self.conn = psycopg2.connect(**self.pg_config)
+        self.connect(**self.mqtt_config)
+        self.loop_forever()
 
-    def on_connect(self, mqttc, obj, flags, rc):
+    # -------------------------------------------------------------------------
+    # Event Handlers
+
+    def on_connect(self, client, userdata, flags, rc):
+        """
+        Upon establishing a connection to our MQTT Broker, for each topic pair
+        within the `topics_and_handlers` dict's key list, subscribe to the
+        topic with the class-configured QOS level.
+        """
         for topic in self.topics_and_handlers.keys():
             self.subscribe(topic, self.qos)
 
-    def on_subscribe(self, mqttc, obj, mid, granted_qos):
-        logger.info(f"Subscribed: {mid} {granted_qos}")
-
-    def on_message(self, mqttc, obj, msg):
+    def on_message(self, client, userdata, msg):
+        """
+        When a message is received on any of our subscribed topics, attempt
+        to look up the appropriate message handler class, and invoke its
+        `process` function with the provided message.
+        """
         try:
             handler = self.topics_and_handlers[msg.topic]
             handler.process(self.conn, msg)
         except KeyError as exc:
             logger.error(exc)
-
-    def run(self):
-        self.connect(**self.mqtt_config)
-
-        rc = 0
-        while rc == 0:
-            rc = self.loop()
-        return rc

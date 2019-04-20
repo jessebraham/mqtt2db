@@ -4,22 +4,19 @@
 import logging
 
 from mqtt2pg.config import load_config
-from mqtt2pg.subscriber import MQTTSubscriber
+from mqtt2pg.subscriber import Subscriber
 
 
 logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
-    config = load_config()
-    mqtt_config = config.get("mqtt", {})
-    pg_config = config.get("pg", {})
-
     topics_and_handlers = {}
 
     try:
-        mqttc = MQTTSubscriber(mqtt_config, pg_config, topics_and_handlers)
-        mqttc.run()
+        config = load_config()
+        client = Subscriber(config, topics_and_handlers)
+        client.run()
     except KeyboardInterrupt:
         logger.info("Keyboard interrupt, shutting down")
     except Exception as exc:
