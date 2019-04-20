@@ -65,4 +65,4 @@ class Subscriber(mqtt.Client):
             handler = self.topics_and_handlers[msg.topic]
             handler.process(self.conn, msg)
         except KeyError as exc:
-            logger.error(exc)
+            logger.exception(exc)
