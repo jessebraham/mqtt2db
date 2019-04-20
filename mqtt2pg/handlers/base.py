@@ -6,6 +6,14 @@ from psycopg2 import sql
 
 
 class BaseMessageHandler(ABC):
+    """
+    Abstract base class for defining MQTT message handlers. Inheriting classes
+    MUST implement the `process` function, as it is invoked directly.
+
+    Additionally includes a small number of simple helper functions for use
+    by inheriting classes.
+    """
+
     @classmethod
     @abstractmethod
     def process(cls, conn, message):
@@ -24,3 +32,14 @@ class BaseMessageHandler(ABC):
         )
         column_names = [desc[0].lower() for desc in cursor.description]
         return column_names
+
+    @staticmethod
+    def insert(cursor, table, data):
+        cursor.execute(
+            sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
+                sql.Identifier(table),
+                sql.SQL(", ").join(map(sql.Identifier, data.keys())),
+                sql.SQL(", ").join(map(sql.Placeholder, data.keys())),
+            ),
+            data,
+        )

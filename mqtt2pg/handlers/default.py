@@ -3,8 +3,6 @@
 import json
 import logging
 
-from psycopg2 import sql
-
 from .base import BaseMessageHandler
 
 
@@ -32,14 +30,3 @@ class DefaultMessageHandler(BaseMessageHandler):
 
         cls.insert(cursor, message.topic, data)
         conn.commit()
-
-    @staticmethod
-    def insert(cursor, table, data):
-        cursor.execute(
-            sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
-                sql.Identifier(table),
-                sql.SQL(", ").join(map(sql.Identifier, data.keys())),
-                sql.SQL(", ").join(map(sql.Placeholder, data.keys())),
-            ),
-            data,
-        )
