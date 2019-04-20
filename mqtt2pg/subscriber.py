@@ -18,10 +18,10 @@ class Subscriber(mqtt.Client):
 
     def __init__(self, config, qos=0):
         """
-        The `config` dict MUST have "mqtt" and "pg" keys in order for this
-        class to operate properly. In turn, those keys respective dicts must
-        contain all required configuration for our MQTT Broker and PostgreSQL.
-        Refer to `template.config.toml` for all required fields.
+        The `config` dict MUST have "mqtt" and "postgresql" keys in order for
+        this class to operate properly. In turn, those keys respective dicts
+        must contain all required configuration for our MQTT Broker and
+        PostgreSQL. Refer to `template.config.toml` for all required fields.
 
         If provided, the dict referenced by the "topics" key should contains
         string-class key-value pairs. All handler classes should inherit from
@@ -30,7 +30,7 @@ class Subscriber(mqtt.Client):
         super().__init__()
         self.enable_logger(logger)
         self.mqtt_config = config.get("mqtt", {})
-        self.pg_config = config.get("pg", {})
+        self.pg_config = config.get("postgresql", {})
         self.qos = qos
         self.topics_and_handlers = config.get("topics", {})
 

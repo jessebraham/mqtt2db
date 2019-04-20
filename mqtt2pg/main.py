@@ -4,7 +4,6 @@
 import logging
 
 from mqtt2pg.config import load_config
-from mqtt2pg.handlers import DefaultMessageHandler
 from mqtt2pg.subscriber import Subscriber
 
 
@@ -15,7 +14,7 @@ if __name__ == "__main__":
     # Begin by loading the contents of the confiuguration file, attempting to
     # parse the TOML to a dict. This will also construct the dict of topics
     # and handlers if any such configuration has been provided.
-    config = load_config(default_handler=DefaultMessageHandler)
+    config = load_config()
 
     # Instantiate the Subscriber class using the above configuration, and
     # run our client. Log any exceptions that may occur, and exit when a

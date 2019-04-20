@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-from mqtt2pg.config import load_config, extract_topic_handlers, try_load_handler
+from mqtt2pg.config import load_config, load_topics_and_handlers, try_load_handler
 from mqtt2pg.handlers import BaseMessageHandler, DefaultMessageHandler
 
 
@@ -10,7 +10,7 @@ host = "localhost"
 port = 1883
 keepalive = 60
 
-[pg]
+[postgresql]
 host = "localhost"
 port = 5432
 dbname = "mqtt2pg"
@@ -28,15 +28,9 @@ def test_load_config(tmpdir):
 
     config = load_config(filename=str(f))
     assert isinstance(config, dict)
-    assert len(config.keys()) > 0
-    assert "topics" not in config.keys()
-
-    config_w_default = load_config(
-        filename=str(f), default_handler=DefaultMessageHandler
-    )
-    assert "mqtt" in config_w_default.keys()
-    assert "pg" in config_w_default.keys()
-    assert "topics" in config_w_default.keys()
+    assert "mqtt" in config.keys()
+    assert "postgresql" in config.keys()
+    assert "topics" in config.keys()
 
     nofile_config = load_config(filename="")
     assert isinstance(nofile_config, dict)
@@ -46,11 +40,12 @@ def test_load_config(tmpdir):
 def test_extract_topic_handlers():
     config = {"topics": {"default": "", "updates": "DefaultMessageHandler"}}
 
-    topics_and_handlers = extract_topic_handlers(config, DefaultMessageHandler)
-
+    topics_and_handlers = load_topics_and_handlers(config)
     assert isinstance(topics_and_handlers, dict)
+
     assert "default" in topics_and_handlers
     assert issubclass(topics_and_handlers["default"], DefaultMessageHandler)
+
     assert "updates" in topics_and_handlers
     assert issubclass(topics_and_handlers["updates"], DefaultMessageHandler)
 
@@ -58,9 +53,10 @@ def test_extract_topic_handlers():
 def test_try_load_handler():
     handler = try_load_handler("DefaultMessageHandler")
     assert issubclass(handler, BaseMessageHandler)
+    assert issubclass(handler, DefaultMessageHandler)
 
     invalid_handler = try_load_handler("InvalidMessageHandler")
-    assert invalid_handler is None
+    assert issubclass(invalid_handler, DefaultMessageHandler)
 
     no_handler = try_load_handler("")
-    assert no_handler is None
+    assert issubclass(no_handler, DefaultMessageHandler)
