@@ -4,6 +4,7 @@
 import logging
 
 from mqtt2pg.config import load_config
+from mqtt2pg.handlers import DefaultMessageHandler
 from mqtt2pg.subscriber import Subscriber
 
 
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
-    topics_and_handlers = {}
+    topics_and_handlers = {"default": DefaultMessageHandler}
 
     try:
         config = load_config()
