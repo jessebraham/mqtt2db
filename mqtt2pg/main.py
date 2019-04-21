@@ -5,6 +5,7 @@ import logging
 import sys
 
 from mqtt2pg.config import load_config
+from mqtt2pg.observer import create_observer
 from mqtt2pg.subscriber import Subscriber
 
 
@@ -24,13 +25,19 @@ if __name__ == "__main__":
         logger.error("A valid configuration file could not be loaded.")
         sys.exit(1)
 
-    # Instantiate the Subscriber class using the above configuration, and
-    # run our client. Log any exceptions that may occur, and exit when a
-    # keyboard interrupt (Ctrl-c) has been received.
+    # Instatiate both the filesystem observer and our Subscriber classes using
+    # the above configuration. Start the observer and client, logging any
+    # exceptions that may occur in the process. If a keyboard interrupt
+    # (Ctrl-c) is received, gracefully shut down.
     try:
         client = Subscriber(config)
+        observer = create_observer(client, meta["filepath"])
+
+        observer.start()
         client.run()
     except KeyboardInterrupt:
         logger.info("Keyboard interrupt, shutting down")
+        observer.stop()
+        observer.join()
     except Exception as exc:
         logger.exception(exc)
