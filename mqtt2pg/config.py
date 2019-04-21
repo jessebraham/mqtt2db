@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import logging
+import os
 
 import toml
 
@@ -14,19 +15,33 @@ logger = logging.getLogger(__name__)
 
 def load_config(filename="config/config.toml"):
     """
-    Given a path to a configuration file, attempt to read its contents and
-    parse out the TOML to a dict, returning the results or an empty dict on
-    failure.
+    Provided with a path to a configuration file, attempt to parse its TOML
+    contents into a dict, returning the results.
     """
+    filepath = os.path.abspath(filename)
     try:
-        config = toml.load(filename)
-    except (FileNotFoundError, TomlDecodeError, TypeError) as exc:
+        config = toml.load(filepath)
+    except (FileNotFoundError, IsADirectoryError, TomlDecodeError, TypeError) as exc:
         logger.exception(exc)
         config = {}
 
     if "topics" in config:
         config["topics"] = load_topics_and_handlers(config)
 
+    config = add_meta(config, filepath)
+    return config
+
+
+def add_meta(config, filepath):
+    """
+    Create a dict in 'config' under the key "_meta" containing the absolute
+    path to the specified configuration file, as well as whether or not the
+    file was loaded successfully and formatted properly.
+    """
+    config["_meta"] = {
+        "filepath": filepath,
+        "success": all(key in config for key in ("mqtt", "postgresql")),
+    }
     return config
 
 

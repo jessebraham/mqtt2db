@@ -2,6 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 import logging
+import sys
 
 from mqtt2pg.config import load_config
 from mqtt2pg.subscriber import Subscriber
@@ -15,6 +16,13 @@ if __name__ == "__main__":
     # parse the TOML to a dict. This will also construct the dict of topics
     # and handlers if any such configuration has been provided.
     config = load_config()
+    meta = config.get("_meta")
+
+    # If the meta-config's `success` attribute is set to False, then a valid
+    # configuration file could not be loaded. In this case, we must terminate.
+    if not meta["success"]:
+        logger.error("A valid configuration file could not be loaded.")
+        sys.exit(1)
 
     # Instantiate the Subscriber class using the above configuration, and
     # run our client. Log any exceptions that may occur, and exit when a

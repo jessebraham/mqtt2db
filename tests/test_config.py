@@ -34,7 +34,7 @@ def test_load_config(tmpdir):
 
     nofile_config = load_config(filename="")
     assert isinstance(nofile_config, dict)
-    assert len(nofile_config.keys()) == 0
+    assert len(nofile_config.keys()) == 1
 
 
 def test_extract_topic_handlers():
