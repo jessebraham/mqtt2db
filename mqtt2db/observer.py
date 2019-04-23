@@ -7,7 +7,7 @@ import os
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from mqtt2pg.config import load_config
+from mqtt2db.config import load_config
 
 
 logger = logging.getLogger(__name__)

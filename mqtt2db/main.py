@@ -4,9 +4,9 @@
 import logging
 import sys
 
-from mqtt2pg.config import load_config
-from mqtt2pg.observer import create_observer
-from mqtt2pg.subscriber import Subscriber
+from mqtt2db.config import load_config
+from mqtt2db.observer import create_observer
+from mqtt2db.subscriber import Subscriber
 
 
 logger = logging.getLogger(__name__)

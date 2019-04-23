@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-from mqtt2pg.config import load_config, load_topics_and_handlers, try_load_handler
-from mqtt2pg.handlers import BaseMessageHandler, DefaultMessageHandler
+from mqtt2db.config import load_config, load_topics_and_handlers, try_load_handler
+from mqtt2db.handlers import BaseMessageHandler, DefaultMessageHandler
 
 
 CONFIGURATION = """
@@ -13,7 +13,7 @@ keepalive = 60
 [postgresql]
 host = "localhost"
 port = 5432
-dbname = "mqtt2pg"
+dbname = "mqtt2db"
 user = "postgres"
 password = "postgres"
 

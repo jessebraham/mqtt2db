@@ -8,5 +8,5 @@ install:
   - pip install coveralls
 # command to run tests
 script:
-  - pytest --cov-report=term-missing --cov=mqtt2pg tests
+  - pytest --cov-report=term-missing --cov=mqtt2db tests
 after_success: coveralls

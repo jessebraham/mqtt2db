@@ -6,7 +6,7 @@ keepalive = 60
 [postgresql]
 host = "localhost"
 port = 5432
-dbname = "mqtt2pg"
+dbname = "mqtt2db"
 user = "postgres"
 password = "postgres"
 

@@ -5,9 +5,7 @@ import os
 
 import toml
 
-from toml.decoder import TomlDecodeError
-
-import mqtt2pg.handlers as handlers
+import mqtt2db.handlers as handlers
 
 
 logger = logging.getLogger(__name__)
@@ -16,33 +14,38 @@ logger = logging.getLogger(__name__)
 def load_config(filename="config/config.toml"):
     """
     Provided with a path to a configuration file, attempt to parse its TOML
-    contents into a dict, returning the results.
+    contents into a dict, returning the results or an empty dict if loading
+    was unsuccessful.
     """
     filepath = os.path.abspath(filename)
     try:
         config = toml.load(filepath)
-    except (FileNotFoundError, IsADirectoryError, TomlDecodeError, TypeError) as exc:
+    except (
+        FileNotFoundError,
+        IsADirectoryError,
+        toml.decoder.TomlDecodeError,
+        TypeError,
+    ) as exc:
         logger.exception(exc)
         config = {}
 
     if "topics" in config:
         config["topics"] = load_topics_and_handlers(config)
 
-    config = add_meta(config, filepath)
+    config["_meta"] = build_meta_config(filepath, config)
     return config
 
 
-def add_meta(config, filepath):
+def build_meta_config(filepath, config):
     """
-    Create a dict in 'config' under the key "_meta" containing the absolute
-    path to the specified configuration file, as well as whether or not the
-    file was loaded successfully and formatted properly.
+    Create and return a dict containing the absolute path to the specified
+    configuration file, as well as whether or not the file was loaded
+    successfully and formatted properly.
     """
-    config["_meta"] = {
+    return {
         "filepath": filepath,
         "success": all(key in config for key in ("mqtt", "postgresql")),
     }
-    return config
 
 
 def load_topics_and_handlers(config):
@@ -74,7 +77,9 @@ def try_load_handler(handlername):
     try:
         handler = getattr(handlers, handlername)
         assert issubclass(handler, handlers.BaseMessageHandler)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError) as exc:
+        if isinstance(exc, AssertionError):
+            logger.exception(exc)
         handler = handlers.DefaultMessageHandler
 
     return handler
