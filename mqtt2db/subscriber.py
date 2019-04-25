@@ -1,9 +1,15 @@
 # -*- encoding: utf-8 -*-
 
+import datetime
 import logging
+import os
 
 import paho.mqtt.client as mqtt
 
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
+from mqtt2db.config import load_config
 from mqtt2db.db import ConnectionManager
 
 
@@ -11,81 +17,53 @@ logger = logging.getLogger(__name__)
 
 
 class Subscriber(mqtt.Client):
-    """
-    Connects to an MQTT Broker and subscribes to all configured topics,
-    registering the appropriate `on_message` handlers for each topic in the
-    process.
-    """
-
     def __init__(self, config, qos=0):
         super().__init__()
-        self.enable_logger(logger)
         self.configure(config)
+        self.enable_logger(logger)
         self.db = ConnectionManager(self.db_config)
+        self.observer = self.create_observer(self.meta_config)
         self.qos = qos
 
     def configure(self, config):
-        """
-        The 'config' dict requires that two keys are present: "mqtt" and
-        "postgresql". Optionally a third key, "topics", may be provided.
-
-        "mqtt" contains the information required to connect to our MQTT broker.
-
-        "postgresql" contains the information required to connect to our
-        database server, including authentication and which database to store
-        our data in.
-
-        "topics" contains a list of key-value pairs, with the key being the
-        topic to subsribe to on the MQTT broker, and the value being the
-        message handler to use. If no handler is provided, the default is used.
-
-        Refer to `template.config.toml` to see an sample configuration.
-        """
-        self.meta_config = config.get("_meta", {})
-        self.mqtt_config = config.get("mqtt", {})
         self.db_config = config.get("database", {})
+        self.meta_config = config.get("meta", {})
+        self.mqtt_config = config.get("mqtt", {})
         self.topics_and_handlers = config.get("topics", {})
 
+    def create_observer(self, config):
+        handler = FileChangedHandler(config, self.reload)
+
+        observer = Observer()
+        observer.schedule(handler, os.path.dirname(config["filepath"]))
+        observer.start()
+
+        return observer
+
     def run(self):
-        """
-        Establish connections with our MQTT broker and PostgreSQL server, and
-        start the MQTT client's event loop.
-        """
         self.db.connect()
         self.connect(**self.mqtt_config)
         self.loop_forever()
 
-    def restart(self):
-        """
-        Close the connections with our MQTT broker and PostgreSQL server, and
-        call the `run` method to re-establish both connections and restart the
-        event loop.
-        """
-        self.conn.close()
+    def reload(self, config):
+        logger.info("Configuration changes detected, reloading")
+        self.configure(config)
         self.db.reload(self.db_config)
-        self.reconnect()
+        self.connect(**self.mqtt_config)
 
     def stop(self):
         self.disconnect()
+        self.observer.stop()
+        self.observer.join()
 
     # -------------------------------------------------------------------------
     # Event Handlers
 
     def on_connect(self, client, userdata, flags, rc):
-        """
-        When a connection with our MQTT broker has been established, iterate
-        through all configured topics and subscribe to each using the class-
-        configured QOS level.
-        """
         for topic in self.topics_and_handlers.keys():
             self.subscribe(topic, self.qos)
 
     def on_message(self, client, userdata, msg):
-        """
-        Upon receiving a new message, attempt to look up the appropriate
-        message handler, and on success call its `process` method on the
-        message. Log any exceptions, along with the message, if they occur.
-        """
         try:
             handler = self.topics_and_handlers[msg.topic]
             handler.process(self.db, msg)
@@ -93,3 +71,26 @@ class Subscriber(mqtt.Client):
             logger.exception(exc)
             logger.error(f"Topic: {msg.topic}")
             logger.error(f"Payload: {msg.payload}")
+
+
+class FileChangedHandler(FileSystemEventHandler):
+    def __init__(self, config, callback, wait=1):
+        self.callback = callback
+        self.filename = os.path.basename(config["filepath"])
+        self.last_change = datetime.datetime.min
+        self.wait = wait
+
+    def on_modified(self, event):
+        if os.path.basename(event.src_path) != self.filename:
+            return
+
+        if (datetime.datetime.now() - self.last_change).seconds < self.wait:
+            return
+
+        config = load_config(event.src_path)
+        if not config["meta"]["success"]:
+            logger.info("Reloading configuration failed, ignoring changes")
+            return
+
+        self.last_change = datetime.datetime.now()
+        self.callback(config)

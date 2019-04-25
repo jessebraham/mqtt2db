@@ -32,7 +32,7 @@ def load_config(filename="config/config.toml"):
     if "topics" in config:
         config["topics"] = load_topics_and_handlers(config)
 
-    config["_meta"] = build_meta_config(filepath, config)
+    config["meta"] = build_meta_config(filepath, config)
     return config
 
 
