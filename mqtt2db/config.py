@@ -32,20 +32,9 @@ def load_config(filename="config/config.toml"):
     if "topics" in config:
         config["topics"] = load_topics_and_handlers(config)
 
-    config["meta"] = build_meta_config(filepath, config)
+    config["filepath"] = filepath
+    config["success"] = all(key in config for key in ("mqtt", "database"))
     return config
-
-
-def build_meta_config(filepath, config):
-    """
-    Create and return a dict containing the absolute path to the specified
-    configuration file, as well as whether or not the file was loaded
-    successfully and formatted properly.
-    """
-    return {
-        "filepath": filepath,
-        "success": all(key in config for key in ("mqtt", "database")),
-    }
 
 
 def load_topics_and_handlers(config):

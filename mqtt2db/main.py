@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     config = load_config()
-    if not config["meta"]["success"]:
+    if not config["success"]:
         logger.error("A valid configuration file could not be loaded")
         sys.exit(1)
 

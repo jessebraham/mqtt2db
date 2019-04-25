@@ -21,7 +21,8 @@ class ConnectionManager:
         self.engine = create_engine(self.conn_string(config))
         self.metadata = MetaData()
 
-    def conn_string(self, config):
+    @staticmethod
+    def conn_string(config):
         # Make a copy of the 'database' dict to avoid popping the value from
         # the original 'config' dict.
         db_config = dict(config)
@@ -46,6 +47,5 @@ class ConnectionManager:
         return table
 
     def insert_data(self, table, data):
-        # do some fucking error handling
         row = table.insert().values(**data)
         self.engine.execute(row)

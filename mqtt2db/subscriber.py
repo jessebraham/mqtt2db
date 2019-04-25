@@ -22,12 +22,12 @@ class Subscriber(mqtt.Client):
         self.configure(config)
         self.enable_logger(logger)
         self.db = ConnectionManager(self.db_config)
-        self.observer = self.create_observer(self.meta_config)
+        self.observer = self.create_observer(config)
         self.qos = qos
 
     def configure(self, config):
+        self.config = config
         self.db_config = config.get("database", {})
-        self.meta_config = config.get("meta", {})
         self.mqtt_config = config.get("mqtt", {})
         self.topics_and_handlers = config.get("topics", {})
 
@@ -88,7 +88,7 @@ class FileChangedHandler(FileSystemEventHandler):
             return
 
         config = load_config(event.src_path)
-        if not config["meta"]["success"]:
+        if not config["success"]:
             logger.info("Reloading configuration failed, ignoring changes")
             return
 

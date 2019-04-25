@@ -10,11 +10,12 @@ host = "localhost"
 port = 1883
 keepalive = 60
 
-[postgresql]
+[database]
+drivername = "postgresql"
 host = "localhost"
 port = 5432
-dbname = "mqtt2db"
-user = "postgres"
+database = "mqtt2db"
+username = "postgres"
 password = "postgres"
 
 [topics]
@@ -29,12 +30,12 @@ def test_load_config(tmpdir):
     config = load_config(filename=str(f))
     assert isinstance(config, dict)
     assert "mqtt" in config.keys()
-    assert "postgresql" in config.keys()
+    assert "database" in config.keys()
     assert "topics" in config.keys()
 
     nofile_config = load_config(filename="")
     assert isinstance(nofile_config, dict)
-    assert len(nofile_config.keys()) == 1
+    assert len(nofile_config.keys()) >= 2
 
 
 def test_extract_topic_handlers():
