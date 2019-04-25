@@ -19,17 +19,17 @@ class DefaultMessageHandler(BaseMessageHandler):
     """
 
     @classmethod
-    def process(cls, conn, message):
-        cursor = conn.cursor()
+    def process(cls, db, message):
+        table = db.reflect_table(message.topic)
         data = json.loads(message.payload)
 
-        match = cls.keys_match_columns(cursor, message.topic, data)
-        if not match:
-            logger.error("Data key(s) did not match schema for topic")
-            raise ValueError()
+        if not cls.keys_match_columns(table, data):
+            logger.error(
+                f"Data key(s) did not match schema for topic '{message.topic}'"
+            )
+            return
 
-        cls.insert(cursor, message.topic, data)
-        conn.commit()
+        db.insert_data(table, data)
 
 
 BaseMessageHandler.register(DefaultMessageHandler)

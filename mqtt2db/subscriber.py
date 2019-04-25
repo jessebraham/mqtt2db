@@ -3,7 +3,8 @@
 import logging
 
 import paho.mqtt.client as mqtt
-import psycopg2
+
+from mqtt2db.db import ConnectionManager
 
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ class Subscriber(mqtt.Client):
         super().__init__()
         self.enable_logger(logger)
         self.configure(config)
+        self.db = ConnectionManager(self.db_config)
         self.qos = qos
 
     def configure(self, config):
@@ -39,8 +41,9 @@ class Subscriber(mqtt.Client):
 
         Refer to `template.config.toml` to see an sample configuration.
         """
+        self.meta_config = config.get("_meta", {})
         self.mqtt_config = config.get("mqtt", {})
-        self.pg_config = config.get("postgresql", {})
+        self.db_config = config.get("database", {})
         self.topics_and_handlers = config.get("topics", {})
 
     def run(self):
@@ -48,7 +51,7 @@ class Subscriber(mqtt.Client):
         Establish connections with our MQTT broker and PostgreSQL server, and
         start the MQTT client's event loop.
         """
-        self.conn = psycopg2.connect(**self.pg_config)
+        self.db.connect()
         self.connect(**self.mqtt_config)
         self.loop_forever()
 
@@ -59,8 +62,11 @@ class Subscriber(mqtt.Client):
         event loop.
         """
         self.conn.close()
-        self.conn = psycopg2.connect(**self.pg_config)
+        self.db.reload(self.db_config)
         self.reconnect()
+
+    def stop(self):
+        self.disconnect()
 
     # -------------------------------------------------------------------------
     # Event Handlers
@@ -82,7 +88,7 @@ class Subscriber(mqtt.Client):
         """
         try:
             handler = self.topics_and_handlers[msg.topic]
-            handler.process(self.conn, msg)
+            handler.process(self.db, msg)
         except KeyError as exc:
             logger.exception(exc)
             logger.error(f"Topic: {msg.topic}")

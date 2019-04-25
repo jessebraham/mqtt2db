@@ -44,7 +44,7 @@ def build_meta_config(filepath, config):
     """
     return {
         "filepath": filepath,
-        "success": all(key in config for key in ("mqtt", "postgresql")),
+        "success": all(key in config for key in ("mqtt", "database")),
     }
 
 

@@ -3,11 +3,12 @@ host = "localhost"
 port = 1883
 keepalive = 60
 
-[postgresql]
+[database]
+drivername = "postgresql"
 host = "localhost"
 port = 5432
-dbname = "mqtt2db"
-user = "postgres"
+database = "mqtt2db"
+username = "postgres"
 password = "postgres"
 
 [topics]

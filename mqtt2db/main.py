@@ -39,5 +39,6 @@ if __name__ == "__main__":
         logger.info("Keyboard interrupt, shutting down")
         observer.stop()
         observer.join()
+        client.stop()
     except Exception as exc:
         logger.exception(exc)
